@@ -1,0 +1,1724 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Informasi UMKM TEHGA! - Kasir & Admin</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            red: '#7A0C0C',
+                            darkred: '#520606',
+                            yellow: '#E69F00',
+                            lightyellow: '#FFF3D6',
+                            cream: '#FAF4E8',
+                            card: '#FFFFFF',
+                            text: '#1A1A1A',
+                            muted: '#666666'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #FAF4E8;
+            color: #1A1A1A;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #FAF4E8;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #D1C7BD;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #7A0C0C;
+        }
+        .active-tab {
+            background-color: #7A0C0C !important;
+            color: #FFFFFF !important;
+            font-weight: 600;
+        }
+        .active-tab svg {
+            color: #E69F00 !important;
+        }
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #printable-receipt, #printable-receipt * {
+                visibility: visible;
+            }
+            #printable-receipt {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-brand-yellow selection:text-brand-red">
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- MAIN APP CONTAINER -->
+    <div id="app" class="flex-grow flex flex-col min-h-screen">
+        
+        <!-- 0. LOGIN PORTAL / ROLE SWITCHER OVERLAY -->
+        <div id="view-login" class="fixed inset-0 z-40 bg-brand-cream flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl shadow-2xl border border-amber-900/10 w-full max-w-md overflow-hidden transition-all duration-300">
+                <!-- Header -->
+                <div class="bg-brand-red text-white p-6 text-center relative">
+                    <div class="w-16 h-16 bg-brand-yellow text-brand-red rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg font-extrabold text-2xl border-2 border-white">
+                        TG!
+                    </div>
+                    <h1 class="text-2xl font-extrabold tracking-tight">KASIR & ADMIN TEHGA!</h1>
+                    <p class="text-amber-100/80 text-xs mt-1">Sistem Pengelolaan UMKM Teh & Dimsum</p>
+                </div>
+
+                <!-- Login Options Switcher -->
+                <div class="p-6">
+                    <div class="flex bg-brand-cream p-1 rounded-xl mb-6 border border-amber-900/10">
+                        <button id="tab-login-kasir" onclick="switchLoginTab('kasir')" class="flex-1 py-2 text-sm font-bold rounded-lg transition-all duration-200 bg-brand-red text-white shadow">
+                            <i data-lucide="shopping-bag" class="w-4 h-4 inline-block mr-1"></i> Login Kasir
+                        </button>
+                        <button id="tab-login-admin" onclick="switchLoginTab('admin')" class="flex-1 py-2 text-sm font-bold rounded-lg transition-all duration-200 text-brand-muted hover:text-brand-red">
+                            <i data-lucide="shield-check" class="w-4 h-4 inline-block mr-1"></i> Login Admin
+                        </button>
+                    </div>
+
+                    <form id="form-login" onsubmit="handleLogin(event)" class="space-y-4">
+                        <input type="hidden" id="login-role" value="kasir">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Username</label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+                                    <i data-lucide="user" class="w-4 h-4"></i>
+                                </span>
+                                <input type="text" id="login-username" required class="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-red focus:bg-white text-sm outline-none transition" placeholder="Masukkan username">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Password</label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+                                    <i data-lucide="lock" class="w-4 h-4"></i>
+                                </span>
+                                <input type="password" id="login-password" required class="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-red focus:bg-white text-sm outline-none transition" placeholder="Masukkan password">
+                            </div>
+                        </div>
+                        
+                        <div class="p-3 bg-brand-lightyellow rounded-xl border border-brand-yellow/30 text-xs text-amber-900 flex items-start gap-2">
+                            <i data-lucide="info" class="w-4 h-4 text-brand-yellow flex-shrink-0 mt-0.5"></i>
+                            <div>
+                                <span class="font-bold">Akun Bawaan Testing:</span><br>
+                                Kasir: <code class="bg-white/70 px-1 rounded">kasir</code> / <code class="bg-white/70 px-1 rounded">kasir123</code><br>
+                                Admin: <code class="bg-white/70 px-1 rounded">admin</code> / <code class="bg-white/70 px-1 rounded">admin123</code>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="w-full py-3 bg-brand-yellow hover:bg-amber-500 text-brand-red font-extrabold rounded-xl shadow-md transition transform active:scale-95 flex items-center justify-center gap-2">
+                            <span>MASUK SISTEM</span>
+                            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- MAIN LAYOUT (DESKTOP NAV & APP VIEWS) -->
+        <div id="view-main" class="flex-grow flex flex-col md:flex-row hidden min-h-screen">
+            
+            <!-- SIDEBAR NAVIGATION -->
+            <aside class="w-full md:w-64 bg-white border-r border-amber-900/10 flex flex-col justify-between flex-shrink-0 shadow-sm z-20">
+                <div>
+                    <!-- Brand Banner -->
+                    <div class="p-5 bg-brand-red text-white flex items-center gap-3">
+                        <div class="w-10 h-10 bg-brand-yellow text-brand-red rounded-xl flex items-center justify-center font-extrabold text-xl shadow-md border border-white">
+                            TG!
+                        </div>
+                        <div>
+                            <h2 class="font-extrabold leading-tight text-lg tracking-wide">TEHGA!</h2>
+                            <span id="nav-role-badge" class="inline-block px-2 py-0.5 bg-brand-yellow text-brand-red text-[10px] font-extrabold rounded uppercase tracking-wider">
+                                KASIR SYSTEM
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Navigation Items -->
+                    <nav class="p-3 space-y-1">
+                        <!-- KASIR NAV ITEMS -->
+                        <div id="nav-kasir-group" class="space-y-1">
+                            <button onclick="switchTab('kasir-pos')" id="tab-btn-kasir-pos" class="nav-btn active-tab w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition text-gray-700 hover:bg-brand-cream">
+                                <i data-lucide="shopping-cart" class="w-5 h-5 text-gray-500"></i>
+                                <span>Pilih & Pesan Menu</span>
+                            </button>
+                            <button onclick="switchTab('kasir-history')" id="tab-btn-kasir-history" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition text-gray-700 hover:bg-brand-cream">
+                                <i data-lucide="receipt" class="w-5 h-5 text-gray-500"></i>
+                                <span>Riwayat Transaksi</span>
+                            </button>
+                        </div>
+
+                        <!-- ADMIN NAV ITEMS -->
+                        <div id="nav-admin-group" class="space-y-1 hidden">
+                            <button onclick="switchTab('admin-dashboard')" id="tab-btn-admin-dashboard" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition text-gray-700 hover:bg-brand-cream">
+                                <i data-lucide="layout-dashboard" class="w-5 h-5 text-gray-500"></i>
+                                <span>Dashboard Admin</span>
+                            </button>
+                            <button onclick="switchTab('admin-sales')" id="tab-btn-admin-sales" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition text-gray-700 hover:bg-brand-cream">
+                                <i data-lucide="trending-up" class="w-5 h-5 text-gray-500"></i>
+                                <span>Cek Penjualan</span>
+                            </button>
+                            <button onclick="switchTab('admin-menu')" id="tab-btn-admin-menu" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition text-gray-700 hover:bg-brand-cream">
+                                <i data-lucide="utensils" class="w-5 h-5 text-gray-500"></i>
+                                <span>Kelola Menu</span>
+                            </button>
+                            <button onclick="switchTab('admin-stock')" id="tab-btn-admin-stock" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition text-gray-700 hover:bg-brand-cream">
+                                <i data-lucide="boxes" class="w-5 h-5 text-gray-500"></i>
+                                <span>Kelola Stok</span>
+                            </button>
+                            <button onclick="switchTab('admin-reports')" id="tab-btn-admin-reports" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition text-gray-700 hover:bg-brand-cream">
+                                <i data-lucide="bar-chart-3" class="w-5 h-5 text-gray-500"></i>
+                                <span>Laporan Keuangan</span>
+                            </button>
+                        </div>
+                    </nav>
+                </div>
+
+                <!-- User Footer & Logout -->
+                <div class="p-4 border-t border-gray-100 bg-gray-50">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2 overflow-hidden">
+                            <div class="w-8 h-8 rounded-full bg-brand-red text-white flex items-center justify-center font-bold text-xs flex-shrink-0">
+                                <span id="user-avatar-initial">K</span>
+                            </div>
+                            <div class="truncate">
+                                <p id="user-display-name" class="text-xs font-bold text-gray-800 truncate">Kasir TEHGA!</p>
+                                <p id="user-display-role" class="text-[10px] text-gray-500 capitalize">Operator</p>
+                            </div>
+                        </div>
+                        <button onclick="logout()" title="Logout" class="p-2 text-gray-400 hover:text-brand-red hover:bg-red-50 rounded-lg transition">
+                            <i data-lucide="log-out" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- MAIN CONTENT DISPLAY AREA -->
+            <main class="flex-grow overflow-y-auto p-4 md:p-6 bg-brand-cream">
+
+                <!-- 1. KASIR MODULE PANELS -->
+                <div id="panel-kasir-pos" class="app-panel space-y-6">
+                    <!-- TOP BAR SEARCH & FILTER -->
+                    <div class="flex flex-col md:flex-row gap-4 items-center justify-between bg-white p-4 rounded-2xl shadow-sm border border-amber-900/10">
+                        <div class="relative w-full md:w-80">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+                                <i data-lucide="search" class="w-4 h-4"></i>
+                            </span>
+                            <input type="text" id="kasir-search" oninput="renderKasirMenu()" placeholder="Cari menu dimsum/teh..." class="w-full pl-10 pr-4 py-2 bg-brand-cream/50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-red">
+                        </div>
+                        <!-- Categories -->
+                        <div class="flex gap-1.5 overflow-x-auto w-full md:w-auto pb-1 md:pb-0 scrollbar-none" id="kasir-category-filters">
+                            <!-- Injected dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- MENU GRID & CART FLEX CONTAINER -->
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                        
+                        <!-- PRODUCTS CATALOG GRID (COL-7 or 8) -->
+                        <div class="lg:col-span-7 xl:col-span-8">
+                            <div id="kasir-menu-grid" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                                <!-- Dynamic Items -->
+                            </div>
+                        </div>
+
+                        <!-- CART & CHECKOUT PANEL (COL-5 or 4) -->
+                        <div class="lg:col-span-5 xl:col-span-4 sticky top-6">
+                            <div class="bg-white rounded-2xl shadow-md border border-amber-900/10 overflow-hidden flex flex-col">
+                                <div class="bg-brand-red text-white p-4 flex justify-between items-center">
+                                    <h3 class="font-bold text-base flex items-center gap-2">
+                                        <i data-lucide="shopping-bag" class="w-5 h-5 text-brand-yellow"></i>
+                                        Pesanan Saat Ini
+                                    </h3>
+                                    <button onclick="clearCart()" class="text-xs text-amber-200 hover:text-white underline">Bersihkan</button>
+                                </div>
+
+                                <!-- CART ITEMS LIST -->
+                                <div id="cart-items-container" class="p-4 max-h-[340px] overflow-y-auto divide-y divide-gray-100">
+                                    <!-- Dynamic Cart Items -->
+                                </div>
+
+                                <!-- CART SUMMARY & PAYMENT -->
+                                <div class="p-4 bg-gray-50 border-t border-gray-100 space-y-3">
+                                    <div class="flex justify-between items-center text-sm text-gray-600">
+                                        <span>Subtotal Item</span>
+                                        <span id="cart-item-count" class="font-bold text-gray-800">0 pcs</span>
+                                    </div>
+                                    <div class="flex justify-between items-center text-lg font-extrabold text-brand-red pt-2 border-t border-gray-200">
+                                        <span>Total Tagihan</span>
+                                        <span id="cart-total-price">Rp0</span>
+                                    </div>
+
+                                    <!-- Cash Payment Section -->
+                                    <div class="pt-2 space-y-2">
+                                        <label class="block text-xs font-bold text-gray-700 uppercase">Uang Diterima (Rp)</label>
+                                        <div class="relative">
+                                            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400 font-bold text-sm">Rp</span>
+                                            <input type="number" id="pay-cash-input" oninput="calculateChange()" placeholder="0" class="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-300 rounded-xl font-bold text-gray-800 text-base focus:ring-2 focus:ring-brand-red outline-none">
+                                        </div>
+                                        <!-- Quick Cash Buttons -->
+                                        <div class="flex gap-1.5 pt-1">
+                                            <button onclick="setQuickCash(10000)" class="px-2 py-1 bg-white border border-gray-200 rounded-lg text-xs font-semibold text-gray-700 hover:bg-brand-yellow/20">10k</button>
+                                            <button onclick="setQuickCash(20000)" class="px-2 py-1 bg-white border border-gray-200 rounded-lg text-xs font-semibold text-gray-700 hover:bg-brand-yellow/20">20k</button>
+                                            <button onclick="setQuickCash(50000)" class="px-2 py-1 bg-white border border-gray-200 rounded-lg text-xs font-semibold text-gray-700 hover:bg-brand-yellow/20">50k</button>
+                                            <button onclick="setExactCash()" class="px-2 py-1 bg-white border border-gray-200 rounded-lg text-xs font-semibold text-gray-700 hover:bg-brand-yellow/20">Uang Pas</button>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex justify-between items-center bg-brand-lightyellow p-3 rounded-xl border border-brand-yellow/40">
+                                        <span class="text-xs font-bold text-amber-900">Kembalian:</span>
+                                        <span id="pay-change-display" class="font-extrabold text-brand-red text-base">Rp0</span>
+                                    </div>
+
+                                    <button onclick="processTransaction()" id="btn-process-pay" class="w-full py-3.5 bg-brand-yellow hover:bg-amber-500 text-brand-red font-extrabold rounded-xl shadow border border-amber-600/20 transition transform active:scale-95 flex items-center justify-center gap-2">
+                                        <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+                                        <span>PROSES PEMBAYARAN</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. KASIR TRANSACTION HISTORY PANEL -->
+                <div id="panel-kasir-history" class="app-panel hidden space-y-6">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-amber-900/10">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                            <div>
+                                <h2 class="text-xl font-bold text-brand-red flex items-center gap-2">
+                                    <i data-lucide="history" class="w-6 h-6 text-brand-yellow"></i>
+                                    Riwayat Transaksi Kasir
+                                </h2>
+                                <p class="text-xs text-gray-500">Daftar transaksi yang diproses di kasir ini.</p>
+                            </div>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse text-sm">
+                                <thead>
+                                    <tr class="bg-brand-cream border-b border-amber-900/10 text-xs font-bold text-brand-red uppercase">
+                                        <th class="p-3">No. Transaksi</th>
+                                        <th class="p-3">Waktu</th>
+                                        <th class="p-3">Item Pesanan</th>
+                                        <th class="p-3">Total</th>
+                                        <th class="p-3">Bayar</th>
+                                        <th class="p-3">Kembali</th>
+                                        <th class="p-3">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-kasir-history" class="divide-y divide-gray-100">
+                                    <!-- Dynamic rows -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. ADMIN DASHBOARD PANEL -->
+                <div id="panel-admin-dashboard" class="app-panel hidden space-y-6">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-2xl font-extrabold text-brand-red flex items-center gap-2">
+                            <i data-lucide="layout-dashboard" class="w-7 h-7 text-brand-yellow"></i>
+                            Dashboard Ringkasan Admin
+                        </h2>
+                        <span class="text-xs font-bold bg-white px-3 py-1.5 rounded-xl border border-amber-900/10 text-gray-600 shadow-sm">
+                            <i data-lucide="calendar" class="w-3.5 h-3.5 inline mr-1 text-brand-yellow"></i>
+                            Hari Ini: <span id="current-date-str"></span>
+                        </span>
+                    </div>
+
+                    <!-- KPI METRIC CARDS -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="bg-white p-5 rounded-2xl border border-amber-900/10 shadow-sm flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-xl bg-amber-100 text-brand-red flex items-center justify-center font-bold">
+                                <i data-lucide="wallet" class="w-6 h-6 text-brand-yellow"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 font-medium">Penjualan Hari Ini</p>
+                                <h3 id="stat-today-revenue" class="text-xl font-extrabold text-gray-900">Rp0</h3>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-5 rounded-2xl border border-amber-900/10 shadow-sm flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+                                <i data-lucide="shopping-bag" class="w-6 h-6"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 font-medium">Jumlah Transaksi</p>
+                                <h3 id="stat-today-count" class="text-xl font-extrabold text-gray-900">0</h3>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-5 rounded-2xl border border-amber-900/10 shadow-sm flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+                                <i data-lucide="cup-soda" class="w-6 h-6"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 font-medium">Produk Terjual Hari Ini</p>
+                                <h3 id="stat-today-items" class="text-xl font-extrabold text-gray-900">0 pcs</h3>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-5 rounded-2xl border border-amber-900/10 shadow-sm flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-xl bg-red-50 text-red-600 flex items-center justify-center font-bold">
+                                <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 font-medium">Stok Menipis / Habis</p>
+                                <h3 id="stat-low-stock-count" class="text-xl font-extrabold text-red-600">0 Item</h3>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RECENT SALES PREVIEW IN DASHBOARD -->
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-amber-900/10">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-bold text-gray-800 text-base">Transaksi Terbaru Hari Ini</h3>
+                            <button onclick="switchTab('admin-sales')" class="text-xs font-bold text-brand-red hover:underline">Lihat Semua Penjualan &rarr;</button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead>
+                                    <tr class="bg-gray-50 text-xs font-bold text-gray-500 uppercase border-b border-gray-100">
+                                        <th class="p-3">No Transaksi</th>
+                                        <th class="p-3">Jam</th>
+                                        <th class="p-3">Item Pesanan</th>
+                                        <th class="p-3">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-dash-recent-sales" class="divide-y divide-gray-100">
+                                    <!-- Dynamic -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. ADMIN SALES MONITORING PANEL -->
+                <div id="panel-admin-sales" class="app-panel hidden space-y-6">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-amber-900/10">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                            <div>
+                                <h2 class="text-xl font-extrabold text-brand-red flex items-center gap-2">
+                                    <i data-lucide="trending-up" class="w-6 h-6 text-brand-yellow"></i>
+                                    Cek Penjualan Seluruh Transaksi
+                                </h2>
+                                <p class="text-xs text-gray-500">Pantau seluruh data pemasukan dari Kasir.</p>
+                            </div>
+
+                            <!-- Period Filter Tabs -->
+                            <div class="flex bg-brand-cream p-1 rounded-xl border border-amber-900/10 text-xs font-bold">
+                                <button onclick="setSalesFilter('today')" id="filter-sales-today" class="px-3 py-1.5 rounded-lg bg-brand-red text-white shadow">Hari Ini</button>
+                                <button onclick="setSalesFilter('week')" id="filter-sales-week" class="px-3 py-1.5 rounded-lg text-gray-600 hover:text-brand-red">Minggu Ini</button>
+                                <button onclick="setSalesFilter('month')" id="filter-sales-month" class="px-3 py-1.5 rounded-lg text-gray-600 hover:text-brand-red">Bulan Ini</button>
+                                <button onclick="setSalesFilter('all')" id="filter-sales-all" class="px-3 py-1.5 rounded-lg text-gray-600 hover:text-brand-red">Semua</button>
+                            </div>
+                        </div>
+
+                        <!-- TOTAL REVENUE SUMMARY CARDS -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                            <div class="bg-brand-cream p-4 rounded-xl border border-amber-900/10">
+                                <p class="text-xs font-bold text-amber-900 uppercase">Total Transaksi Filter</p>
+                                <h3 id="sales-filtered-count" class="text-2xl font-extrabold text-brand-red">0 Transaksi</h3>
+                            </div>
+                            <div class="bg-brand-lightyellow p-4 rounded-xl border border-brand-yellow/40">
+                                <p class="text-xs font-bold text-amber-900 uppercase">Total Pendapatan Filter</p>
+                                <h3 id="sales-filtered-total" class="text-2xl font-extrabold text-brand-red">Rp0</h3>
+                            </div>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse text-sm">
+                                <thead>
+                                    <tr class="bg-brand-cream border-b border-amber-900/10 text-xs font-bold text-brand-red uppercase">
+                                        <th class="p-3">No. Transaksi</th>
+                                        <th class="p-3">Tanggal & Waktu</th>
+                                        <th class="p-3">Detail Produk</th>
+                                        <th class="p-3">Total Harga</th>
+                                        <th class="p-3">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-admin-sales" class="divide-y divide-gray-100">
+                                    <!-- Dynamic Rows -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. ADMIN MENU MANAGEMENT (CRUD) PANEL -->
+                <div id="panel-admin-menu" class="app-panel hidden space-y-6">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div>
+                            <h2 class="text-xl font-extrabold text-brand-red flex items-center gap-2">
+                                <i data-lucide="utensils" class="w-6 h-6 text-brand-yellow"></i>
+                                Kelola Daftar Menu TEHGA!
+                            </h2>
+                            <p class="text-xs text-gray-500">Tambah, ubah harga, atau hapus item menu yang tampil di Kasir.</p>
+                        </div>
+                        <button onclick="openMenuModal()" class="px-4 py-2.5 bg-brand-yellow hover:bg-amber-500 text-brand-red font-extrabold text-xs rounded-xl shadow flex items-center gap-2">
+                            <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                            <span>TAMBAH MENU BARU</span>
+                        </button>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-amber-900/10">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead>
+                                    <tr class="bg-brand-cream border-b border-amber-900/10 text-xs font-bold text-brand-red uppercase">
+                                        <th class="p-3">Nama Produk</th>
+                                        <th class="p-3">Kategori</th>
+                                        <th class="p-3">Harga</th>
+                                        <th class="p-3">Deskripsi</th>
+                                        <th class="p-3">Status Menu</th>
+                                        <th class="p-3 text-center">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-admin-menu" class="divide-y divide-gray-100">
+                                    <!-- Dynamic Rows -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 6. ADMIN STOCK MANAGEMENT PANEL -->
+                <div id="panel-admin-stock" class="app-panel hidden space-y-6">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-amber-900/10">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                            <div>
+                                <h2 class="text-xl font-extrabold text-brand-red flex items-center gap-2">
+                                    <i data-lucide="boxes" class="w-6 h-6 text-brand-yellow"></i>
+                                    Kelola & Update Stok Produk
+                                </h2>
+                                <p class="text-xs text-gray-500">Pantau stok bahan/produk secara real-time.</p>
+                            </div>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead>
+                                    <tr class="bg-brand-cream border-b border-amber-900/10 text-xs font-bold text-brand-red uppercase">
+                                        <th class="p-3">Nama Produk</th>
+                                        <th class="p-3">Kategori</th>
+                                        <th class="p-3">Jumlah Stok Saat Ini</th>
+                                        <th class="p-3">Status Otomatis</th>
+                                        <th class="p-3 text-center">Update Stok</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-admin-stock" class="divide-y divide-gray-100">
+                                    <!-- Dynamic stock rows -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 7. ADMIN REPORTS & ANALYTICS PANEL -->
+                <div id="panel-admin-reports" class="app-panel hidden space-y-6">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div>
+                            <h2 class="text-xl font-extrabold text-brand-red flex items-center gap-2">
+                                <i data-lucide="bar-chart-3" class="w-6 h-6 text-brand-yellow"></i>
+                                Laporan Ringkasan Bisnis
+                            </h2>
+                            <p class="text-xs text-gray-500">Analisis kinerja penjualan dan produk terlaris.</p>
+                        </div>
+                        <!-- Period Filter Tabs -->
+                        <div class="flex bg-white p-1 rounded-xl border border-amber-900/10 text-xs font-bold shadow-sm">
+                            <button onclick="setReportFilter('today')" id="filter-rep-today" class="px-3 py-1.5 rounded-lg bg-brand-red text-white">Hari Ini</button>
+                            <button onclick="setReportFilter('week')" id="filter-rep-week" class="px-3 py-1.5 rounded-lg text-gray-600 hover:text-brand-red">Minggu Ini</button>
+                            <button onclick="setReportFilter('month')" id="filter-rep-month" class="px-3 py-1.5 rounded-lg text-gray-600 hover:text-brand-red">Bulan Ini</button>
+                        </div>
+                    </div>
+
+                    <!-- REPORT CARDS -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="bg-white p-5 rounded-2xl border border-amber-900/10 shadow-sm">
+                            <p class="text-xs font-bold text-gray-500 uppercase">Total Pendapatan</p>
+                            <h3 id="rep-total-rev" class="text-2xl font-extrabold text-brand-red mt-1">Rp0</h3>
+                        </div>
+                        <div class="bg-white p-5 rounded-2xl border border-amber-900/10 shadow-sm">
+                            <p class="text-xs font-bold text-gray-500 uppercase">Jumlah Transaksi Selesai</p>
+                            <h3 id="rep-total-tx" class="text-2xl font-extrabold text-gray-900 mt-1">0 Transaksi</h3>
+                        </div>
+                        <div class="bg-white p-5 rounded-2xl border border-amber-900/10 shadow-sm">
+                            <p class="text-xs font-bold text-gray-500 uppercase">Total Produk Terjual</p>
+                            <h3 id="rep-total-items" class="text-2xl font-extrabold text-emerald-600 mt-1">0 Item</h3>
+                        </div>
+                    </div>
+
+                    <!-- TOP SELLING PRODUCTS TABLE -->
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-amber-900/10">
+                        <h3 class="font-bold text-gray-800 text-base mb-4 flex items-center gap-2">
+                            <i data-lucide="trophy" class="w-5 h-5 text-brand-yellow"></i>
+                            Peringkat Produk Paling Laku
+                        </h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead>
+                                    <tr class="bg-brand-cream border-b border-amber-900/10 text-xs font-bold text-brand-red uppercase">
+                                        <th class="p-3">Peringkat</th>
+                                        <th class="p-3">Nama Produk</th>
+                                        <th class="p-3">Kategori</th>
+                                        <th class="p-3">Terjual (Qty)</th>
+                                        <th class="p-3">Subtotal Estimasi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-top-products" class="divide-y divide-gray-100">
+                                    <!-- Dynamic -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- MODAL 1: ADD/EDIT MENU PRODUCT -->
+    <div id="modal-menu-form" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div class="bg-brand-red text-white p-4 flex justify-between items-center">
+                <h3 id="modal-menu-title" class="font-bold text-base">Tambah Menu Baru</h3>
+                <button onclick="closeMenuModal()" class="text-white hover:text-amber-200">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <form id="form-menu-item" onsubmit="saveMenuItem(event)" class="p-6 space-y-4">
+                <input type="hidden" id="menu-id" value="">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Nama Produk</label>
+                    <input type="text" id="menu-name" required placeholder="Contoh: Original Tea" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-red outline-none">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Harga (Rp)</label>
+                        <input type="number" id="menu-price" required min="0" placeholder="5000" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-red outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Kategori</label>
+                        <select id="menu-category" required class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-red outline-none">
+                            <option value="DIMSUM">DIMSUM</option>
+                            <option value="TEA SERIES">TEA SERIES</option>
+                            <option value="MILK SERIES">MILK SERIES</option>
+                            <option value="MATCHA & COFFEE SERIES">MATCHA & COFFEE</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Stok Awal</label>
+                    <input type="number" id="menu-stock" required min="0" placeholder="20" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-red outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Deskripsi Produk</label>
+                    <textarea id="menu-desc" rows="2" placeholder="Deskripsi singkat produk..." class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-red outline-none"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Status Ketersediaan</label>
+                    <select id="menu-status" required class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-red outline-none">
+                        <option value="Tersedia">Tersedia</option>
+                        <option value="Tidak Tersedia">Tidak Tersedia</option>
+                    </select>
+                </div>
+
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeMenuModal()" class="px-4 py-2 border border-gray-200 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100">Batal</button>
+                    <button type="submit" class="px-5 py-2 bg-brand-yellow hover:bg-amber-500 text-brand-red font-extrabold text-xs rounded-xl shadow">SIMPAN MENU</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 2: RECEIPT / NOTA PEMBAYARAN SUCCESS -->
+    <div id="modal-receipt" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col max-h-[90vh]">
+            
+            <div class="p-4 bg-emerald-600 text-white text-center">
+                <i data-lucide="check-circle" class="w-10 h-10 mx-auto mb-1"></i>
+                <h3 class="font-extrabold text-lg">TRANSAKSI BERHASIL</h3>
+                <p class="text-xs text-emerald-100">Pembayaran telah diterima & dicatat</p>
+            </div>
+
+            <!-- RECEIPT BODY (PRINTABLE AREA) -->
+            <div id="printable-receipt" class="p-6 overflow-y-auto font-mono text-xs text-gray-800 space-y-3 bg-white">
+                <div class="text-center border-b border-dashed pb-3">
+                    <h2 class="font-extrabold text-base tracking-widest">TEHGA!</h2>
+                    <p class="text-[10px] text-gray-500">Spesialis Teh & Dimsum Kekinian</p>
+                    <p class="text-[10px] text-gray-400 mt-1" id="rec-datetime">2026-11-06 10:00</p>
+                </div>
+
+                <div class="flex justify-between text-[11px]">
+                    <span>No. Tx:</span>
+                    <span id="rec-tx-id" class="font-bold">#TG-00000</span>
+                </div>
+                <div class="flex justify-between text-[11px]">
+                    <span>Kasir:</span>
+                    <span id="rec-cashier-name">Kasir TEHGA!</span>
+                </div>
+
+                <div class="border-b border-dashed my-2"></div>
+
+                <!-- ITEMS TABLE LIST -->
+                <div id="rec-items-list" class="space-y-1.5">
+                    <!-- Dynamic Items -->
+                </div>
+
+                <div class="border-b border-dashed my-2"></div>
+
+                <div class="space-y-1 text-right">
+                    <div class="flex justify-between">
+                        <span>Total:</span>
+                        <span id="rec-total" class="font-bold">Rp0</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Uang Diterima:</span>
+                        <span id="rec-paid">Rp0</span>
+                    </div>
+                    <div class="flex justify-between font-bold text-sm text-brand-red pt-1 border-t border-gray-100">
+                        <span>Kembalian:</span>
+                        <span id="rec-change">Rp0</span>
+                    </div>
+                </div>
+
+                <div class="text-center pt-4 border-t border-dashed text-[10px] text-gray-400">
+                    <p>Terima kasih telah membeli di TEHGA!</p>
+                    <p>Semoga harimu menyenangkan!</p>
+                </div>
+            </div>
+
+            <!-- MODAL BUTTONS -->
+            <div class="p-4 bg-gray-50 border-t border-gray-100 flex gap-2">
+                <button onclick="window.print()" class="flex-1 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold rounded-xl text-xs flex items-center justify-center gap-1">
+                    <i data-lucide="printer" class="w-4 h-4"></i> Cetak Struk
+                </button>
+                <button onclick="closeReceiptModal()" class="flex-1 py-2.5 bg-brand-yellow hover:bg-amber-500 text-brand-red font-extrabold rounded-xl text-xs flex items-center justify-center gap-1 shadow">
+                    Transaksi Baru
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        /* ==========================================================================
+           INITIAL DEFAULT DATABASE SEEDING
+           ========================================================================== */
+        const DEFAULT_MENU = [
+            // DIMSUM
+            { id: "m1", name: "Dimsum Original (Porsi Kecil)", category: "DIMSUM", price: 10000, stock: 25, desc: "Dimsum ayam gurih 3 pcs", status: "Tersedia" },
+            { id: "m2", name: "Dimsum Original (Porsi Besar)", category: "DIMSUM", price: 15000, stock: 20, desc: "Dimsum ayam gurih 5 pcs", status: "Tersedia" },
+            { id: "m3", name: "Dimsum Saus Mentai (Kecil)", category: "DIMSUM", price: 10000, stock: 15, desc: "Dimsum dengan saus mentai creamy", status: "Tersedia" },
+            { id: "m4", name: "Dimsum Saus Mentai (Besar)", category: "DIMSUM", price: 15000, stock: 15, desc: "Dimsum dengan saus mentai creamy 5 pcs", status: "Tersedia" },
+            { id: "m5", name: "Dimsum Saus Tartar (Kecil)", category: "DIMSUM", price: 10000, stock: 12, desc: "Dimsum topping saus tartar segar", status: "Tersedia" },
+            { id: "m6", name: "Dimsum Saus Tartar (Besar)", category: "DIMSUM", price: 15000, stock: 12, desc: "Dimsum topping saus tartar 5 pcs", status: "Tersedia" },
+            { id: "m7", name: "Mozza Dimsum Extra", category: "DIMSUM", price: 5000, stock: 30, desc: "Topping keju mozzarella lumer", status: "Tersedia" },
+            { id: "m8", name: "Slice Cheese Extra", category: "DIMSUM", price: 3000, stock: 30, desc: "Topping keju slice gurih", status: "Tersedia" },
+            
+            // TEA SERIES
+            { id: "m9", name: "Original Tea", category: "TEA SERIES", price: 3000, stock: 50, desc: "Teh seduh asli TEHGA! segar", status: "Tersedia" },
+            { id: "m10", name: "Lemon Tea", category: "TEA SERIES", price: 3000, stock: 40, desc: "Es teh rasa ekstrak lemon", status: "Tersedia" },
+            { id: "m11", name: "Lychee Tea", category: "TEA SERIES", price: 5000, stock: 35, desc: "Es teh buah kelengkeng/lengkeng manis", status: "Tersedia" },
+            { id: "m12", name: "Blackcurrant Tea", category: "TEA SERIES", price: 5000, stock: 30, desc: "Es teh rasa blackcurrant segar", status: "Tersedia" },
+            { id: "m13", name: "Mango Tea", category: "TEA SERIES", price: 5000, stock: 30, desc: "Es teh rasa manga tropis", status: "Tersedia" },
+            { id: "m14", name: "Apple Tea", category: "TEA SERIES", price: 5000, stock: 30, desc: "Es teh manis rasa apel", status: "Tersedia" },
+            { id: "m15", name: "Grape Tea", category: "TEA SERIES", price: 5000, stock: 25, desc: "Es teh rasa anggur segar", status: "Tersedia" },
+            { id: "m16", name: "Milk Tea", category: "TEA SERIES", price: 5000, stock: 40, desc: "Teh susu khas TEHGA!", status: "Tersedia" },
+            { id: "m17", name: "Yakult Tea", category: "TEA SERIES", price: 7000, stock: 20, desc: "Perpaduan teh dan Yakult segar", status: "Tersedia" },
+            
+            // MILK SERIES
+            { id: "m18", name: "Lychee Milk", category: "MILK SERIES", price: 6000, stock: 25, desc: "Susu segar rasa laci", status: "Tersedia" },
+            { id: "m19", name: "Lemon Milk", category: "MILK SERIES", price: 6000, stock: 20, desc: "Susu segar aroma lemon", status: "Tersedia" },
+            { id: "m20", name: "Mango Milk", category: "MILK SERIES", price: 6000, stock: 25, desc: "Susu segar buah mangga", status: "Tersedia" },
+            { id: "m21", name: "Apple Milk", category: "MILK SERIES", price: 6000, stock: 20, desc: "Susu manis rasa apel", status: "Tersedia" },
+            { id: "m22", name: "Grape Milk", category: "MILK SERIES", price: 6000, stock: 20, desc: "Susu manis rasa anggur", status: "Tersedia" },
+            { id: "m23", name: "Blackcurrant Milk", category: "MILK SERIES", price: 6000, stock: 20, desc: "Susu manis blackcurrant", status: "Tersedia" },
+            { id: "m24", name: "Strawberry Milk", category: "MILK SERIES", price: 6000, stock: 30, desc: "Susu rasa stroberi favorit", status: "Tersedia" },
+            { id: "m25", name: "Chocolate Milk", category: "MILK SERIES", price: 6000, stock: 35, desc: "Susu cokelat pekat & legit", status: "Tersedia" },
+
+            // MATCHA & COFFEE SERIES
+            { id: "m26", name: "Coffee Latte", category: "MATCHA & COFFEE SERIES", price: 9000, stock: 25, desc: "Kopi espresso dengan susu segar", status: "Tersedia" },
+            { id: "m27", name: "Butterscotch Coffee Latte", category: "MATCHA & COFFEE SERIES", price: 12000, stock: 18, desc: "Kopi latte dengan rasa butterscotch karamel", status: "Tersedia" },
+            { id: "m28", name: "Dalgona Coffee Latte", category: "MATCHA & COFFEE SERIES", price: 12000, stock: 15, desc: "Kopi latte krim dalgona lembut", status: "Tersedia" },
+            { id: "m29", name: "Matcha Latte", category: "MATCHA & COFFEE SERIES", price: 9000, stock: 25, desc: "Teh hijau Jepang asli dengan susu", status: "Tersedia" },
+            { id: "m30", name: "Strawberry Matcha Latte", category: "MATCHA & COFFEE SERIES", price: 12000, stock: 15, desc: "Perpaduan matcha dan stroberi", status: "Tersedia" },
+            { id: "m31", name: "Coffee Matcha Latte", category: "MATCHA & COFFEE SERIES", price: 12000, stock: 15, desc: "Perpaduan rasa kopi dan matcha", status: "Tersedia" }
+        ];
+
+        /* STATE MANAGEMENT */
+        let menuItems = [];
+        let transactions = [];
+        let cart = [];
+        let currentUser = null;
+        let selectedCategory = "ALL";
+        let salesPeriodFilter = "today";
+        let reportPeriodFilter = "today";
+
+        /* INITIALIZATION ON WINDOW LOAD */
+        window.onload = function() {
+            initDatabase();
+            initDateDisplay();
+            lucide.createIcons();
+            
+            // Listen for cross-tab updates via localStorage
+            window.addEventListener('storage', function(e) {
+                if (e.key === 'tehga_menu' || e.key === 'tehga_transactions') {
+                    loadDataFromStorage();
+                    renderCurrentView();
+                }
+            });
+        };
+
+        function initDatabase() {
+            const storedMenu = localStorage.getItem('tehga_menu');
+            if (!storedMenu) {
+                localStorage.setItem('tehga_menu', JSON.stringify(DEFAULT_MENU));
+                menuItems = DEFAULT_MENU;
+            } else {
+                menuItems = JSON.parse(storedMenu);
+            }
+
+            const storedTx = localStorage.getItem('tehga_transactions');
+            if (!storedTx) {
+                localStorage.setItem('tehga_transactions', JSON.stringify([]));
+                transactions = [];
+            } else {
+                transactions = JSON.parse(storedTx);
+            }
+        }
+
+        function loadDataFromStorage() {
+            menuItems = JSON.parse(localStorage.getItem('tehga_menu')) || [];
+            transactions = JSON.parse(localStorage.getItem('tehga_transactions')) || [];
+        }
+
+        function saveMenuToStorage() {
+            localStorage.setItem('tehga_menu', JSON.stringify(menuItems));
+        }
+
+        function saveTransactionsToStorage() {
+            localStorage.setItem('tehga_transactions', JSON.stringify(transactions));
+        }
+
+        function initDateDisplay() {
+            const now = new Date();
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            const dateStr = now.toLocaleDateString('id-ID', options);
+            const dateElem = document.getElementById('current-date-str');
+            if (dateElem) dateElem.innerText = dateStr;
+        }
+
+        /* ==========================================================================
+           AUTHENTICATION & LOGIN LOGIC
+           ========================================================================== */
+        function switchLoginTab(role) {
+            document.getElementById('login-role').value = role;
+            const tabKasir = document.getElementById('tab-login-kasir');
+            const tabAdmin = document.getElementById('tab-login-admin');
+
+            if (role === 'kasir') {
+                tabKasir.className = "flex-1 py-2 text-sm font-bold rounded-lg transition-all duration-200 bg-brand-red text-white shadow";
+                tabAdmin.className = "flex-1 py-2 text-sm font-bold rounded-lg transition-all duration-200 text-brand-muted hover:text-brand-red";
+                document.getElementById('login-username').value = "kasir";
+                document.getElementById('login-password').value = "kasir123";
+            } else {
+                tabAdmin.className = "flex-1 py-2 text-sm font-bold rounded-lg transition-all duration-200 bg-brand-red text-white shadow";
+                tabKasir.className = "flex-1 py-2 text-sm font-bold rounded-lg transition-all duration-200 text-brand-muted hover:text-brand-red";
+                document.getElementById('login-username').value = "admin";
+                document.getElementById('login-password').value = "admin123";
+            }
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const role = document.getElementById('login-role').value;
+            const user = document.getElementById('login-username').value.trim();
+            const pass = document.getElementById('login-password').value.trim();
+
+            if (role === 'kasir') {
+                if (user === 'kasir' && pass === 'kasir123') {
+                    currentUser = { name: "Kasir Utama", role: "kasir" };
+                    showMainApp('kasir');
+                    showToast("Berhasil login sebagai Kasir!", "success");
+                } else {
+                    showToast("Username/Password Kasir Salah!", "error");
+                }
+            } else if (role === 'admin') {
+                if (user === 'admin' && pass === 'admin123') {
+                    currentUser = { name: "Admin Manager", role: "admin" };
+                    showMainApp('admin');
+                    showToast("Berhasil login sebagai Admin!", "success");
+                } else {
+                    showToast("Username/Password Admin Salah!", "error");
+                }
+            }
+        }
+
+        function showMainApp(role) {
+            document.getElementById('view-login').classList.add('hidden');
+            document.getElementById('view-main').classList.remove('hidden');
+
+            const roleBadge = document.getElementById('nav-role-badge');
+            const kasirNav = document.getElementById('nav-kasir-group');
+            const adminNav = document.getElementById('nav-admin-group');
+            const userNameDisp = document.getElementById('user-display-name');
+            const userRoleDisp = document.getElementById('user-display-role');
+            const userAvatarInit = document.getElementById('user-avatar-initial');
+
+            userNameDisp.innerText = currentUser.name;
+            userRoleDisp.innerText = role.toUpperCase();
+            userAvatarInit.innerText = role === 'kasir' ? 'K' : 'A';
+
+            if (role === 'kasir') {
+                roleBadge.innerText = "KASIR MODE";
+                roleBadge.className = "inline-block px-2 py-0.5 bg-brand-yellow text-brand-red text-[10px] font-extrabold rounded uppercase tracking-wider";
+                kasirNav.classList.remove('hidden');
+                adminNav.classList.add('hidden');
+                switchTab('kasir-pos');
+            } else {
+                roleBadge.innerText = "ADMIN MODE";
+                roleBadge.className = "inline-block px-2 py-0.5 bg-brand-red text-brand-yellow text-[10px] font-extrabold rounded uppercase tracking-wider border border-brand-yellow/30";
+                adminNav.classList.remove('hidden');
+                kasirNav.classList.add('hidden');
+                switchTab('admin-dashboard');
+            }
+            lucide.createIcons();
+        }
+
+        function logout() {
+            currentUser = null;
+            cart = [];
+            document.getElementById('view-main').classList.add('hidden');
+            document.getElementById('view-login').classList.remove('hidden');
+            switchLoginTab('kasir');
+            showToast("Anda telah keluar dari sistem.", "info");
+        }
+
+        /* ==========================================================================
+           TAB NAVIGATION SWITCHER
+           ========================================================================== */
+        function switchTab(tabId) {
+            // Hide all panels
+            document.querySelectorAll('.app-panel').forEach(panel => panel.classList.add('hidden'));
+            
+            // Remove active style from all nav buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('active-tab');
+            });
+
+            // Show target panel & highlight button
+            const targetPanel = document.getElementById('panel-' + tabId);
+            const targetBtn = document.getElementById('tab-btn-' + tabId);
+            
+            if (targetPanel) targetPanel.classList.remove('hidden');
+            if (targetBtn) targetBtn.classList.add('active-tab');
+
+            // Render/Refresh panel specific data
+            renderCurrentView();
+            lucide.createIcons();
+        }
+
+        function renderCurrentView() {
+            loadDataFromStorage();
+            renderKasirCategories();
+            renderKasirMenu();
+            renderCartUI();
+            renderKasirHistory();
+            renderAdminDashboard();
+            renderAdminSales();
+            renderAdminMenuTable();
+            renderAdminStockTable();
+            renderAdminReports();
+        }
+
+        /* ==========================================================================
+           1. KASIR MODULE: POS MENU & CART
+           ========================================================================== */
+        function renderKasirCategories() {
+            const categories = ["ALL", "DIMSUM", "TEA SERIES", "MILK SERIES", "MATCHA & COFFEE SERIES"];
+            const container = document.getElementById('kasir-category-filters');
+            if (!container) return;
+
+            container.innerHTML = categories.map(cat => {
+                const isActive = selectedCategory === cat;
+                const activeClasses = isActive 
+                    ? "bg-brand-red text-white font-bold" 
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200";
+                return `<button onclick="filterCategory('${cat}')" class="px-3 py-1.5 rounded-xl text-xs whitespace-nowrap transition ${activeClasses}">${cat}</button>`;
+            }).join('');
+        }
+
+        function filterCategory(cat) {
+            selectedCategory = cat;
+            renderKasirCategories();
+            renderKasirMenu();
+        }
+
+        function renderKasirMenu() {
+            const grid = document.getElementById('kasir-menu-grid');
+            if (!grid) return;
+
+            const searchQuery = (document.getElementById('kasir-search')?.value || "").toLowerCase();
+
+            const filtered = menuItems.filter(item => {
+                const matchesCat = selectedCategory === "ALL" || item.category === selectedCategory;
+                const matchesSearch = item.name.toLowerCase().includes(searchQuery) || item.desc.toLowerCase().includes(searchQuery);
+                return matchesCat && matchesSearch;
+            });
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full bg-white p-8 text-center rounded-2xl border border-amber-900/10 text-gray-400">
+                        <i data-lucide="search-x" class="w-10 h-10 mx-auto mb-2 opacity-50"></i>
+                        <p class="text-sm font-semibold">Tidak ada produk ditemukan.</p>
+                    </div>`;
+                lucide.createIcons();
+                return;
+            }
+
+            grid.innerHTML = filtered.map(item => {
+                const isOutOfStock = item.stock <= 0 || item.status === "Tidak Tersedia";
+                const isLowStock = item.stock > 0 && item.stock <= 10;
+                
+                let badgeHtml = '';
+                if (item.status === "Tidak Tersedia") {
+                    badgeHtml = `<span class="px-2 py-0.5 bg-red-100 text-red-700 font-bold text-[10px] rounded-md">TIDAK TERSEDIA</span>`;
+                } else if (item.stock <= 0) {
+                    badgeHtml = `<span class="px-2 py-0.5 bg-red-100 text-red-700 font-bold text-[10px] rounded-md">HABIS</span>`;
+                } else if (isLowStock) {
+                    badgeHtml = `<span class="px-2 py-0.5 bg-amber-100 text-amber-800 font-bold text-[10px] rounded-md">STOK MENIPIS (${item.stock})</span>`;
+                } else {
+                    badgeHtml = `<span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 font-bold text-[10px] rounded-md">Stok: ${item.stock}</span>`;
+                }
+
+                return `
+                <div class="bg-white rounded-2xl p-4 border border-amber-900/10 shadow-sm flex flex-col justify-between hover:shadow-md transition">
+                    <div>
+                        <div class="flex justify-between items-start mb-2 gap-2">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-amber-900/60 bg-brand-cream px-2 py-0.5 rounded-md">${item.category}</span>
+                            ${badgeHtml}
+                        </div>
+                        <h4 class="font-bold text-gray-800 text-sm leading-tight mb-1">${item.name}</h4>
+                        <p class="text-xs text-gray-500 mb-3 line-clamp-2">${item.desc || 'Produk varian spesial TEHGA!'}</p>
+                    </div>
+                    <div class="flex items-center justify-between pt-3 border-t border-gray-100">
+                        <span class="font-extrabold text-brand-red text-base">Rp${item.price.toLocaleString('id-ID')}</span>
+                        <button onclick="addToCart('${item.id}')" ${isOutOfStock ? 'disabled' : ''} class="px-3 py-1.5 ${isOutOfStock ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-brand-yellow hover:bg-amber-500 text-brand-red'} font-extrabold text-xs rounded-xl transition flex items-center gap-1 shadow-sm">
+                            <i data-lucide="plus" class="w-4 h-4"></i> Tambah
+                        </button>
+                    </div>
+                </div>
+                `;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        /* CART OPERATIONS */
+        function addToCart(itemId) {
+            const item = menuItems.find(m => m.id === itemId);
+            if (!item) return;
+
+            if (item.stock <= 0 || item.status === "Tidak Tersedia") {
+                showToast("Stok produk habis atau tidak tersedia!", "error");
+                return;
+            }
+
+            const existingCartIndex = cart.findIndex(c => c.id === itemId);
+            if (existingCartIndex > -1) {
+                if (cart[existingCartIndex].qty + 1 > item.stock) {
+                    showToast(`Tidak bisa menambah! Stok tersisa ${item.stock}`, "warning");
+                    return;
+                }
+                cart[existingCartIndex].qty += 1;
+            } else {
+                cart.push({
+                    id: item.id,
+                    name: item.name,
+                    price: item.price,
+                    qty: 1
+                });
+            }
+            renderCartUI();
+            showToast(`${item.name} ditambahkan ke pesanan.`, "info");
+        }
+
+        function updateCartQty(itemId, delta) {
+            const index = cart.findIndex(c => c.id === itemId);
+            if (index === -1) return;
+
+            const item = menuItems.find(m => m.id === itemId);
+            const newQty = cart[index].qty + delta;
+
+            if (newQty <= 0) {
+                cart.splice(index, 1);
+            } else {
+                if (item && newQty > item.stock) {
+                    showToast(`Batas stok tercapai (${item.stock})`, "warning");
+                    return;
+                }
+                cart[index].qty = newQty;
+            }
+            renderCartUI();
+        }
+
+        function removeFromCart(itemId) {
+            cart = cart.filter(c => c.id !== itemId);
+            renderCartUI();
+        }
+
+        function clearCart() {
+            cart = [];
+            document.getElementById('pay-cash-input').value = "";
+            renderCartUI();
+        }
+
+        function getCartTotal() {
+            return cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+        }
+
+        function renderCartUI() {
+            const container = document.getElementById('cart-items-container');
+            const totalDisplay = document.getElementById('cart-total-price');
+            const countDisplay = document.getElementById('cart-item-count');
+
+            if (!container) return;
+
+            const total = getCartTotal();
+            const totalPcs = cart.reduce((sum, item) => sum + item.qty, 0);
+
+            if (totalDisplay) totalDisplay.innerText = `Rp${total.toLocaleString('id-ID')}`;
+            if (countDisplay) countDisplay.innerText = `${totalPcs} pcs`;
+
+            if (cart.length === 0) {
+                container.innerHTML = `
+                    <div class="py-12 text-center text-gray-400">
+                        <i data-lucide="shopping-cart" class="w-10 h-10 mx-auto mb-2 opacity-30"></i>
+                        <p class="text-xs font-semibold">Keranjang pesanan masih kosong</p>
+                    </div>`;
+                lucide.createIcons();
+                calculateChange();
+                return;
+            }
+
+            container.innerHTML = cart.map(item => `
+                <div class="py-2.5 flex items-center justify-between gap-2">
+                    <div class="flex-grow">
+                        <h5 class="font-bold text-gray-800 text-xs">${item.name}</h5>
+                        <p class="text-[11px] text-gray-500">Rp${item.price.toLocaleString('id-ID')} &times; ${item.qty} = <span class="font-bold text-brand-red">Rp${(item.price * item.qty).toLocaleString('id-ID')}</span></p>
+                    </div>
+                    <div class="flex items-center gap-1 bg-gray-100 p-1 rounded-lg">
+                        <button onclick="updateCartQty('${item.id}', -1)" class="w-6 h-6 bg-white rounded border border-gray-200 text-gray-700 font-extrabold flex items-center justify-center text-xs hover:bg-gray-50">-</button>
+                        <span class="w-6 text-center text-xs font-bold">${item.qty}</span>
+                        <button onclick="updateCartQty('${item.id}', 1)" class="w-6 h-6 bg-white rounded border border-gray-200 text-gray-700 font-extrabold flex items-center justify-center text-xs hover:bg-gray-50">+</button>
+                    </div>
+                    <button onclick="removeFromCart('${item.id}')" class="text-gray-400 hover:text-red-500 p-1">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            `).join('');
+
+            lucide.createIcons();
+            calculateChange();
+        }
+
+        /* PAYMENT CALCULATION */
+        function calculateChange() {
+            const total = getCartTotal();
+            const cashInput = parseFloat(document.getElementById('pay-cash-input').value) || 0;
+            const changeDisplay = document.getElementById('pay-change-display');
+
+            const change = cashInput - total;
+            if (cashInput > 0 && change >= 0) {
+                changeDisplay.innerText = `Rp${change.toLocaleString('id-ID')}`;
+                changeDisplay.className = "font-extrabold text-emerald-700 text-base";
+            } else if (cashInput > 0 && change < 0) {
+                changeDisplay.innerText = `Kurang Rp${Math.abs(change).toLocaleString('id-ID')}`;
+                changeDisplay.className = "font-extrabold text-red-600 text-base";
+            } else {
+                changeDisplay.innerText = "Rp0";
+                changeDisplay.className = "font-extrabold text-brand-red text-base";
+            }
+        }
+
+        function setQuickCash(amount) {
+            document.getElementById('pay-cash-input').value = amount;
+            calculateChange();
+        }
+
+        function setExactCash() {
+            document.getElementById('pay-cash-input').value = getCartTotal();
+            calculateChange();
+        }
+
+        /* PROCESS TRANSACTION & STOCK DEDUCTION */
+        function processTransaction() {
+            if (cart.length === 0) {
+                showToast("Pilih menu terlebih dahulu!", "warning");
+                return;
+            }
+
+            const total = getCartTotal();
+            const cashPaid = parseFloat(document.getElementById('pay-cash-input').value) || 0;
+
+            if (cashPaid < total) {
+                showToast("Uang diterima kurang dari total tagihan!", "error");
+                return;
+            }
+
+            // Verify stock availability once more before finalizing
+            for (let cItem of cart) {
+                const menuItem = menuItems.find(m => m.id === cItem.id);
+                if (!menuItem || menuItem.stock < cItem.qty) {
+                    showToast(`Stok ${cItem.name} tidak mencukupi untuk diproses!`, "error");
+                    return;
+                }
+            }
+
+            // Deduct stock from database
+            cart.forEach(cItem => {
+                const menuItem = menuItems.find(m => m.id === cItem.id);
+                if (menuItem) {
+                    menuItem.stock -= cItem.qty;
+                    if (menuItem.stock <= 0) {
+                        menuItem.stock = 0;
+                    }
+                }
+            });
+            saveMenuToStorage();
+
+            // Record transaction
+            const txId = "TG-" + Date.now().toString().slice(-6);
+            const now = new Date();
+            const newTransaction = {
+                id: txId,
+                date: now.toISOString(),
+                cashier: currentUser ? currentUser.name : "Kasir TEHGA!",
+                items: JSON.parse(JSON.stringify(cart)),
+                total: total,
+                paid: cashPaid,
+                change: cashPaid - total
+            };
+
+            transactions.unshift(newTransaction);
+            saveTransactionsToStorage();
+
+            // Display Receipt Modal
+            showReceiptModal(newTransaction);
+
+            // Reset cart
+            cart = [];
+            document.getElementById('pay-cash-input').value = "";
+            renderCartUI();
+            renderKasirMenu();
+            showToast("Transaksi berhasil diproses!", "success");
+        }
+
+        function showReceiptModal(tx) {
+            document.getElementById('rec-tx-id').innerText = "#" + tx.id;
+            document.getElementById('rec-cashier-name').innerText = tx.cashier;
+            
+            const dateObj = new Date(tx.date);
+            document.getElementById('rec-datetime').innerText = dateObj.toLocaleString('id-ID');
+            document.getElementById('rec-total').innerText = "Rp" + tx.total.toLocaleString('id-ID');
+            document.getElementById('rec-paid').innerText = "Rp" + tx.paid.toLocaleString('id-ID');
+            document.getElementById('rec-change').innerText = "Rp" + tx.change.toLocaleString('id-ID');
+
+            const listContainer = document.getElementById('rec-items-list');
+            listContainer.innerHTML = tx.items.map(item => `
+                <div class="flex justify-between">
+                    <span>${item.name} x${item.qty}</span>
+                    <span class="font-bold">Rp${(item.price * item.qty).toLocaleString('id-ID')}</span>
+                </div>
+            `).join('');
+
+            document.getElementById('modal-receipt').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeReceiptModal() {
+            document.getElementById('modal-receipt').classList.add('hidden');
+        }
+
+        function renderKasirHistory() {
+            const tbody = document.getElementById('table-kasir-history');
+            if (!tbody) return;
+
+            if (transactions.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-gray-400">Belum ada transaksi recorded.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = transactions.map(tx => {
+                const dateObj = new Date(tx.date);
+                const itemsStr = tx.items.map(i => `${i.name} (${i.qty})`).join(', ');
+                return `
+                    <tr class="hover:bg-gray-50 border-b border-gray-100">
+                        <td class="p-3 font-bold text-gray-800">#${tx.id}</td>
+                        <td class="p-3 text-xs text-gray-500">${dateObj.toLocaleDateString('id-ID')} ${dateObj.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})}</td>
+                        <td class="p-3 text-xs max-w-xs truncate">${itemsStr}</td>
+                        <td class="p-3 font-bold text-brand-red">Rp${tx.total.toLocaleString('id-ID')}</td>
+                        <td class="p-3 text-xs">Rp${tx.paid.toLocaleString('id-ID')}</td>
+                        <td class="p-3 text-xs">Rp${tx.change.toLocaleString('id-ID')}</td>
+                        <td class="p-3">
+                            <button onclick="reprintTx('${tx.id}')" class="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-xs font-semibold flex items-center gap-1">
+                                <i data-lucide="printer" class="w-3.5 h-3.5"></i> Struk
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        function reprintTx(txId) {
+            const tx = transactions.find(t => t.id === txId);
+            if (tx) {
+                showReceiptModal(tx);
+            }
+        }
+
+        /* ==========================================================================
+           2. ADMIN MODULE: DASHBOARD, SALES, MENU CRUD, STOCK, REPORTS
+           ========================================================================== */
+        function isSameDay(d1, d2) {
+            return d1.getFullYear() === d2.getFullYear() &&
+                   d1.getMonth() === d2.getMonth() &&
+                   d1.getDate() === d2.getDate();
+        }
+
+        function renderAdminDashboard() {
+            const today = new Date();
+            const todayTxs = transactions.filter(t => isSameDay(new Date(t.date), today));
+
+            const todayRevenue = todayTxs.reduce((sum, t) => sum + t.total, 0);
+            const todayItemQty = todayTxs.reduce((sum, t) => sum + t.items.reduce((iSum, item) => iSum + item.qty, 0), 0);
+            const lowStockCount = menuItems.filter(m => m.stock <= 10 || m.status === "Tidak Tersedia").length;
+
+            document.getElementById('stat-today-revenue').innerText = "Rp" + todayRevenue.toLocaleString('id-ID');
+            document.getElementById('stat-today-count').innerText = todayTxs.length + " Transaksi";
+            document.getElementById('stat-today-items').innerText = todayItemQty + " pcs";
+            document.getElementById('stat-low-stock-count').innerText = lowStockCount + " Item";
+
+            const recentTbody = document.getElementById('table-dash-recent-sales');
+            if (recentTbody) {
+                if (todayTxs.length === 0) {
+                    recentTbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-gray-400">Belum ada transaksi hari ini.</td></tr>`;
+                } else {
+                    recentTbody.innerHTML = todayTxs.slice(0, 5).map(tx => {
+                        const dateObj = new Date(tx.date);
+                        const itemsStr = tx.items.map(i => `${i.name} (${i.qty})`).join(', ');
+                        return `
+                            <tr class="hover:bg-gray-50 border-b border-gray-100">
+                                <td class="p-3 font-bold text-gray-800">#${tx.id}</td>
+                                <td class="p-3 text-xs text-gray-500">${dateObj.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})}</td>
+                                <td class="p-3 text-xs truncate max-w-xs">${itemsStr}</td>
+                                <td class="p-3 font-bold text-brand-red">Rp${tx.total.toLocaleString('id-ID')}</td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+            }
+        }
+
+        /* ADMIN SALES MONITORING */
+        function setSalesFilter(period) {
+            salesPeriodFilter = period;
+            ['today', 'week', 'month', 'all'].forEach(p => {
+                const btn = document.getElementById('filter-sales-' + p);
+                if (btn) {
+                    if (p === period) {
+                        btn.className = "px-3 py-1.5 rounded-lg bg-brand-red text-white shadow font-bold";
+                    } else {
+                        btn.className = "px-3 py-1.5 rounded-lg text-gray-600 hover:text-brand-red font-bold";
+                    }
+                }
+            });
+            renderAdminSales();
+        }
+
+        function filterTransactionsByPeriod(periodStr) {
+            const now = new Date();
+            return transactions.filter(tx => {
+                const txDate = new Date(tx.date);
+                if (periodStr === 'today') {
+                    return isSameDay(txDate, now);
+                } else if (periodStr === 'week') {
+                    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                    return txDate >= oneWeekAgo;
+                } else if (periodStr === 'month') {
+                    return txDate.getMonth() === now.getMonth() && txDate.getFullYear() === now.getFullYear();
+                }
+                return true; // 'all'
+            });
+        }
+
+        function renderAdminSales() {
+            const tbody = document.getElementById('table-admin-sales');
+            if (!tbody) return;
+
+            const filteredTxs = filterTransactionsByPeriod(salesPeriodFilter);
+            const totalRevenue = filteredTxs.reduce((sum, t) => sum + t.total, 0);
+
+            document.getElementById('sales-filtered-count').innerText = `${filteredTxs.length} Transaksi`;
+            document.getElementById('sales-filtered-total').innerText = `Rp${totalRevenue.toLocaleString('id-ID')}`;
+
+            if (filteredTxs.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-gray-400">Tidak ada transaksi untuk periode filter ini.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filteredTxs.map(tx => {
+                const dateObj = new Date(tx.date);
+                const itemsStr = tx.items.map(i => `${i.name} &times; ${i.qty}`).join('<br>');
+                return `
+                    <tr class="hover:bg-gray-50 border-b border-gray-100">
+                        <td class="p-3 font-bold text-gray-800">#${tx.id}</td>
+                        <td class="p-3 text-xs text-gray-500">${dateObj.toLocaleDateString('id-ID')} ${dateObj.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})}</td>
+                        <td class="p-3 text-xs leading-relaxed">${itemsStr}</td>
+                        <td class="p-3 font-extrabold text-brand-red">Rp${tx.total.toLocaleString('id-ID')}</td>
+                        <td class="p-3">
+                            <button onclick="reprintTx('${tx.id}')" class="px-2.5 py-1 bg-brand-cream hover:bg-brand-yellow/30 text-amber-900 border border-amber-900/10 rounded-lg text-xs font-bold flex items-center gap-1">
+                                <i data-lucide="eye" class="w-3.5 h-3.5"></i> Struk
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        /* ADMIN MENU CRUD */
+        function renderAdminMenuTable() {
+            const tbody = document.getElementById('table-admin-menu');
+            if (!tbody) return;
+
+            if (menuItems.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-gray-400">Belum ada menu produk terdaftar.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = menuItems.map(item => `
+                <tr class="hover:bg-gray-50 border-b border-gray-100">
+                    <td class="p-3 font-bold text-gray-800">${item.name}</td>
+                    <td class="p-3 text-xs"><span class="px-2 py-0.5 bg-brand-cream border border-amber-900/10 font-bold rounded text-amber-900">${item.category}</span></td>
+                    <td class="p-3 font-extrabold text-brand-red">Rp${item.price.toLocaleString('id-ID')}</td>
+                    <td class="p-3 text-xs text-gray-500 max-w-xs truncate">${item.desc || '-'}</td>
+                    <td class="p-3">
+                        <button onclick="toggleMenuStatus('${item.id}')" class="px-2.5 py-1 text-xs font-bold rounded-lg transition ${item.status === 'Tersedia' ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200' : 'bg-red-100 text-red-800 hover:bg-red-200'}">
+                            ${item.status}
+                        </button>
+                    </td>
+                    <td class="p-3 text-center">
+                        <div class="flex items-center justify-center gap-2">
+                            <button onclick="editMenuItem('${item.id}')" class="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100" title="Edit">
+                                <i data-lucide="edit-3" class="w-4 h-4"></i>
+                            </button>
+                            <button onclick="deleteMenuItem('${item.id}')" class="p-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100" title="Hapus">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function openMenuModal(itemId = null) {
+            const form = document.getElementById('form-menu-item');
+            form.reset();
+            
+            if (itemId) {
+                const item = menuItems.find(m => m.id === itemId);
+                if (item) {
+                    document.getElementById('modal-menu-title').innerText = "Edit Menu Produk";
+                    document.getElementById('menu-id').value = item.id;
+                    document.getElementById('menu-name').value = item.name;
+                    document.getElementById('menu-price').value = item.price;
+                    document.getElementById('menu-category').value = item.category;
+                    document.getElementById('menu-stock').value = item.stock;
+                    document.getElementById('menu-desc').value = item.desc;
+                    document.getElementById('menu-status').value = item.status;
+                }
+            } else {
+                document.getElementById('modal-menu-title').innerText = "Tambah Menu Baru";
+                document.getElementById('menu-id').value = "";
+            }
+            document.getElementById('modal-menu-form').classList.remove('hidden');
+        }
+
+        function closeMenuModal() {
+            document.getElementById('modal-menu-form').classList.add('hidden');
+        }
+
+        function saveMenuItem(e) {
+            e.preventDefault();
+            const id = document.getElementById('menu-id').value;
+            const name = document.getElementById('menu-name').value.trim();
+            const price = parseFloat(document.getElementById('menu-price').value) || 0;
+            const category = document.getElementById('menu-category').value;
+            const stock = parseInt(document.getElementById('menu-stock').value) || 0;
+            const desc = document.getElementById('menu-desc').value.trim();
+            const status = document.getElementById('menu-status').value;
+
+            if (id) {
+                // Update Existing
+                const index = menuItems.findIndex(m => m.id === id);
+                if (index > -1) {
+                    menuItems[index] = { ...menuItems[index], name, price, category, stock, desc, status };
+                    showToast("Menu berhasil diperbarui!", "success");
+                }
+            } else {
+                // Add New Menu Item
+                const newId = "m" + Date.now();
+                menuItems.push({ id: newId, name, price, category, stock, desc, status });
+                showToast("Menu baru berhasil ditambahkan!", "success");
+            }
+
+            saveMenuToStorage();
+            closeMenuModal();
+            renderCurrentView();
+        }
+
+        function editMenuItem(itemId) {
+            openMenuModal(itemId);
+        }
+
+        function deleteMenuItem(itemId) {
+            const item = menuItems.find(m => m.id === itemId);
+            if (!item) return;
+
+            if (confirm(`Apakah Anda yakin ingin menghapus menu "${item.name}"?`)) {
+                menuItems = menuItems.filter(m => m.id !== itemId);
+                saveMenuToStorage();
+                renderCurrentView();
+                showToast("Menu telah dihapus.", "info");
+            }
+        }
+
+        function toggleMenuStatus(itemId) {
+            const item = menuItems.find(m => m.id === itemId);
+            if (item) {
+                item.status = item.status === "Tersedia" ? "Tidak Tersedia" : "Tersedia";
+                saveMenuToStorage();
+                renderCurrentView();
+                showToast(`Status ${item.name} diubah ke ${item.status}`, "info");
+            }
+        }
+
+        /* ADMIN STOCK MANAGEMENT */
+        function renderAdminStockTable() {
+            const tbody = document.getElementById('table-admin-stock');
+            if (!tbody) return;
+
+            if (menuItems.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-gray-400">Belum ada data stok.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = menuItems.map(item => {
+                let statusBadge = '';
+                if (item.stock > 10) {
+                    statusBadge = `<span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 font-extrabold text-xs rounded-lg">Tersedia</span>`;
+                } else if (item.stock > 0 && item.stock <= 10) {
+                    statusBadge = `<span class="px-2.5 py-1 bg-amber-100 text-amber-800 font-extrabold text-xs rounded-lg">Stok Menipis</span>`;
+                } else {
+                    statusBadge = `<span class="px-2.5 py-1 bg-red-100 text-red-800 font-extrabold text-xs rounded-lg">Habis</span>`;
+                }
+
+                return `
+                    <tr class="hover:bg-gray-50 border-b border-gray-100">
+                        <td class="p-3 font-bold text-gray-800">${item.name}</td>
+                        <td class="p-3 text-xs text-gray-500">${item.category}</td>
+                        <td class="p-3 font-extrabold text-base text-gray-900">${item.stock} pcs</td>
+                        <td class="p-3">${statusBadge}</td>
+                        <td class="p-3 text-center">
+                            <div class="flex items-center justify-center gap-2">
+                                <button onclick="quickUpdateStock('${item.id}', -5)" class="px-2 py-1 bg-red-50 hover:bg-red-100 text-red-700 rounded text-xs font-bold">-5</button>
+                                <button onclick="quickUpdateStock('${item.id}', -1)" class="px-2 py-1 bg-red-50 hover:bg-red-100 text-red-700 rounded text-xs font-bold">-1</button>
+                                <input type="number" id="stock-input-${item.id}" value="${item.stock}" min="0" class="w-16 px-2 py-1 border border-gray-300 rounded text-center text-xs font-bold outline-none focus:ring-1 focus:ring-brand-red">
+                                <button onclick="quickUpdateStock('${item.id}', 1)" class="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded text-xs font-bold">+1</button>
+                                <button onclick="quickUpdateStock('${item.id}', 10)" class="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded text-xs font-bold">+10</button>
+                                <button onclick="saveInputStock('${item.id}')" class="px-3 py-1 bg-brand-yellow hover:bg-amber-500 text-brand-red text-xs font-extrabold rounded-lg shadow-sm">Simpan</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function quickUpdateStock(itemId, delta) {
+            const item = menuItems.find(m => m.id === itemId);
+            if (item) {
+                item.stock = Math.max(0, item.stock + delta);
+                saveMenuToStorage();
+                renderCurrentView();
+                showToast(`Stok ${item.name} diperbarui menjadi ${item.stock}`, "info");
+            }
+        }
+
+        function saveInputStock(itemId) {
+            const inputVal = parseInt(document.getElementById('stock-input-' + itemId).value);
+            const item = menuItems.find(m => m.id === itemId);
+            if (item && !isNaN(inputVal) && inputVal >= 0) {
+                item.stock = inputVal;
+                saveMenuToStorage();
+                renderCurrentView();
+                showToast(`Stok ${item.name} disimpan: ${item.stock}`, "success");
+            }
+        }
+
+        /* ADMIN REPORTS & ANALYTICS */
+        function setReportFilter(period) {
+            reportPeriodFilter = period;
+            ['today', 'week', 'month'].forEach(p => {
+                const btn = document.getElementById('filter-rep-' + p);
+                if (btn) {
+                    if (p === period) {
+                        btn.className = "px-3 py-1.5 rounded-lg bg-brand-red text-white font-bold";
+                    } else {
+                        btn.className = "px-3 py-1.5 rounded-lg text-gray-600 hover:text-brand-red font-bold";
+                    }
+                }
+            });
+            renderAdminReports();
+        }
+
+        function renderAdminReports() {
+            const filteredTxs = filterTransactionsByPeriod(reportPeriodFilter);
+            
+            const totalRev = filteredTxs.reduce((sum, t) => sum + t.total, 0);
+            const totalItemsQty = filteredTxs.reduce((sum, t) => sum + t.items.reduce((iSum, i) => iSum + i.qty, 0), 0);
+
+            document.getElementById('rep-total-rev').innerText = "Rp" + totalRev.toLocaleString('id-ID');
+            document.getElementById('rep-total-tx').innerText = filteredTxs.length + " Transaksi";
+            document.getElementById('rep-total-items').innerText = totalItemsQty + " Item";
+
+            // Calculate Best Sellers
+            const productSalesMap = {};
+            filteredTxs.forEach(tx => {
+                tx.items.forEach(item => {
+                    if (!productSalesMap[item.name]) {
+                        productSalesMap[item.name] = {
+                            name: item.name,
+                            qty: 0,
+                            revenue: 0,
+                            category: (menuItems.find(m => m.name === item.name)?.category) || 'LAINNYA'
+                        };
+                    }
+                    productSalesMap[item.name].qty += item.qty;
+                    productSalesMap[item.name].revenue += (item.price * item.qty);
+                });
+            });
+
+            const sortedProducts = Object.values(productSalesMap).sort((a, b) => b.qty - a.qty);
+            const tbody = document.getElementById('table-top-products');
+            if (!tbody) return;
+
+            if (sortedProducts.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-gray-400">Tidak ada data penjualan untuk laporan periode ini.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = sortedProducts.map((prod, index) => {
+                let rankBadge = `<span class="font-bold text-gray-500">#${index + 1}</span>`;
+                if (index === 0) rankBadge = `<span class="px-2 py-0.5 bg-yellow-400 text-amber-950 font-extrabold rounded-md text-xs">🥇 Terlaris #1</span>`;
+                if (index === 1) rankBadge = `<span class="px-2 py-0.5 bg-slate-300 text-slate-800 font-extrabold rounded-md text-xs">🥈 Top #2</span>`;
+                if (index === 2) rankBadge = `<span class="px-2 py-0.5 bg-amber-600 text-white font-extrabold rounded-md text-xs">🥉 Top #3</span>`;
+
+                return `
+                    <tr class="hover:bg-gray-50 border-b border-gray-100">
+                        <td class="p-3">${rankBadge}</td>
+                        <td class="p-3 font-bold text-gray-800">${prod.name}</td>
+                        <td class="p-3 text-xs"><span class="px-2 py-0.5 bg-brand-cream text-amber-900 border border-amber-900/10 rounded font-bold">${prod.category}</span></td>
+                        <td class="p-3 font-extrabold text-emerald-700 text-base">${prod.qty} pcs</td>
+                        <td class="p-3 font-extrabold text-brand-red">Rp${prod.revenue.toLocaleString('id-ID')}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        /* ==========================================================================
+           TOAST NOTIFICATION HELPER
+           ========================================================================== */
+        function showToast(message, type = "info") {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+
+            const toast = document.createElement('div');
+            
+            let bgClass = "bg-brand-red text-white";
+            let icon = "info";
+
+            if (type === "success") {
+                bgClass = "bg-emerald-700 text-white";
+                icon = "check-circle";
+            } else if (type === "warning") {
+                bgClass = "bg-amber-500 text-white";
+                icon = "alert-triangle";
+            } else if (type === "error") {
+                bgClass = "bg-red-600 text-white";
+                icon = "x-circle";
+            }
+
+            toast.className = `${bgClass} pointer-events-auto px-4 py-3 rounded-xl shadow-xl border border-white/20 flex items-center gap-3 text-xs font-bold transition transform duration-300 translate-y-2 opacity-0`;
+            toast.innerHTML = `
+                <i data-lucide="${icon}" class="w-4 h-4 flex-shrink-0"></i>
+                <span>${message}</span>
+            `;
+
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            });
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
